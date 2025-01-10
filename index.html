@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unfollow Checker</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #fff; /* Background putih */
+            color: #000; /* Teks hitam */
+        }
+        .container {
+            background: #f9f9f9;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            width: 400px;
+            text-align: center;
+        }
+        .logo {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .logo img {
+            width: 80px; /* Ukuran logo lebih kecil */
+            height: auto;
+            cursor: pointer;
+        }
+        .logo a {
+            text-decoration: none;
+            color: #007BFF;
+            font-weight: bold;
+            font-size: 16px;
+            margin-top: 10px;
+        }
+        h1 {
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+        table.upload-box {
+            width: 100%;
+            margin: 20px 0;
+            border: 1px solid #ccc;
+            border-collapse: collapse;
+        }
+        table.upload-box th, table.upload-box td {
+            padding: 10px;
+            border: 1px solid #ccc;
+            text-align: left;
+            font-size: 14px;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #007BFF;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        table.result-box {
+            width: 100%;
+            margin-top: 20px;
+            border-collapse: collapse;
+            color: #000;
+        }
+        table.result-box th, table.result-box td {
+            padding: 10px;
+            border: 1px solid #ccc;
+            text-align: center;
+        }
+        table.result-box th {
+            background-color: #ddd;
+        }
+        td a {
+            color: #007BFF;
+            text-decoration: none;
+        }
+        td a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">
+            <a href="https://www.instagram.com/a.huswtl_husna?igsh=b3MxNmdyeGR0ajhr" target="_blank">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/a/a5/Instagram_icon.png" alt="Instagram Logo">
+            </a>
+            <a href="https://www.instagram.com/a.huswtl_husna?igsh=b3MxNmdyeGR0ajhr" target="_blank">Click For My IG</a>
+        </div>
+        <h1>Unfollow Checker</h1>
+        <table class="upload-box">
+            <tr>
+                <th>File Following</th>
+                <td><input type="file" id="followingFile" accept=".html"></td>
+            </tr>
+            <tr>
+                <th>File Follower</th>
+                <td><input type="file" id="followerFile" accept=".html"></td>
+            </tr>
+        </table>
+        <button id="compareButton">Bandingkan</button>
+        <table class="result-box" id="notFollowingBack">
+            <thead>
+                <tr>
+                    <th>No</th>
+                    <th>Username</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Hasil perbandingan akan dimasukkan di sini -->
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        document.getElementById("compareButton").addEventListener("click", () => {
+            const followingFile = document.getElementById("followingFile").files[0];
+            const followerFile = document.getElementById("followerFile").files[0];
+
+            if (!followingFile || !followerFile) {
+                alert("Harap upload kedua file terlebih dahulu!");
+                return;
+            }
+
+            Promise.all([readHtmlFile(followingFile), readHtmlFile(followerFile)]).then(([followingHtml, followersHtml]) => {
+                const followingList = extractUsernames(followingHtml);
+                const followerList = extractUsernames(followersHtml);
+
+                const notFollowingBack = followingList.filter(username => !followerList.includes(username));
+
+                displayResult(notFollowingBack);
+            }).catch(err => {
+                console.error(err);
+                alert("Terjadi kesalahan saat membaca file!");
+            });
+        });
+
+        function readHtmlFile(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = () => reject(reader.error);
+                reader.readAsText(file);
+            });
+        }
+
+        function extractUsernames(htmlString) {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(htmlString, "text/html");
+            const links = doc.querySelectorAll("a[href^='https://www.instagram.com/']");
+            return Array.from(links).map(link => link.textContent.trim());
+        }
+
+        function displayResult(resultList) {
+            const resultTable = document.getElementById("notFollowingBack").querySelector("tbody");
+            resultTable.innerHTML = "";
+
+            if (resultList.length === 0) {
+                const row = document.createElement("tr");
+                const cell = document.createElement("td");
+                cell.colSpan = 2;
+                cell.textContent = "Semua orang sudah follow balik!";
+                row.appendChild(cell);
+                resultTable.appendChild(row);
+            } else {
+                resultList.forEach((username, index) => {
+                    const row = document.createElement("tr");
+
+                    const numberCell = document.createElement("td");
+                    numberCell.textContent = index + 1;
+
+                    const usernameCell = document.createElement("td");
+                    const link = document.createElement("a");
+                    link.href = `https://www.instagram.com/${username}`;
+                    link.textContent = username;
+                    link.target = "_blank";
+                    usernameCell.appendChild(link);
+
+                    row.appendChild(numberCell);
+                    row.appendChild(usernameCell);
+                    resultTable.appendChild(row);
+                });
+            }
+        }
+    </script>
+</body>
+</html>
